@@ -1,20 +1,84 @@
+/* General page styling */
 body {
     font-family: Arial, sans-serif;
     margin: 40px;
     background-color: #f5f5f5;
 }
+
+/* Navigation links */
 nav a {
     margin-right: 15px;
+    text-decoration: none;
+    color: #007BFF;
+    font-weight: bold;
 }
+
+nav a:hover {
+    text-decoration: underline;
+}
+
+/* Main content container */
 .container {
     background: white;
     padding: 20px;
     border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
+
+/* Task list */
 ul {
     list-style: none;
     padding: 0;
 }
+
+li {
+    margin: 8px 0;
+    font-size: 16px;
+}
+
+/* Links inside tasks */
+li a {
+    margin-left: 10px;
+    text-decoration: none;
+    color: #007BFF;
+}
+
+li a:hover {
+    text-decoration: underline;
+}
+
+/* Input field for adding/editing tasks */
+input[type="text"] {
+    padding: 8px;
+    width: 250px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-right: 5px;
+}
+
+/* Buttons */
+button, input[type="submit"] {
+    padding: 8px 12px;
+    background-color: #007BFF;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover, input[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+/* Flash messages */
 .flashes {
     color: green;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+/* Headings */
+h2 {
+    margin-bottom: 15px;
+    color: #333;
 }
