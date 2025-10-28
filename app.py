@@ -4,6 +4,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user, UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from flask_wtf import FlaskForm
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, EqualTo, Length
 
 # --- Flask app setup ---
 app = Flask(__name__)
@@ -34,6 +37,23 @@ class Task(db.Model):
     date_created = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# --- Forms ---
+class RegisterForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=3, max=25)])
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=6)])
+    confirm = PasswordField('Confirm Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Register')
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Login')
+
+class TaskForm(FlaskForm):
+    title = StringField('Task', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    submit = SubmitField('Submit')
+
 # --- User loader ---
 @login_manager.user_loader
 def load_user(user_id):
@@ -44,36 +64,35 @@ def load_user(user_id):
 @login_required
 def index():
     tasks = Task.query.filter_by(user_id=current_user.id).order_by(Task.date_created.desc()).all()
-    return render_template('index.html', tasks=tasks)
+    form = TaskForm()
+    return render_template('index.html', tasks=tasks, form=form)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if User.query.filter_by(username=username).first():
+    form = RegisterForm()
+    if form.validate_on_submit():
+        if User.query.filter_by(username=form.username.data).first():
             flash('Username already exists!', 'danger')
             return redirect(url_for('register'))
-        hashed_password = generate_password_hash(password)
-        new_user = User(username=username, password=hashed_password)
-        db.session.add(new_user)
+        hashed_password = generate_password_hash(form.password.data)
+        user = User(username=form.username.data, password=hashed_password)
+        db.session.add(user)
         db.session.commit()
         flash('Registration successful! Login now.', 'success')
         return redirect(url_for('login'))
-    return render_template('register.html')
+    return render_template('register.html', form=form)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        user = User.query.filter_by(username=username).first()
-        if user and check_password_hash(user.password, password):
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user and check_password_hash(user.password, form.password.data):
             login_user(user)
             flash('Logged in successfully!', 'success')
             return redirect(url_for('index'))
         flash('Invalid credentials!', 'danger')
-    return render_template('login.html')
+    return render_template('login.html', form=form)
 
 @app.route('/logout')
 @login_required
@@ -85,36 +104,36 @@ def logout():
 @app.route('/add', methods=['POST'])
 @login_required
 def add_task():
-    title = request.form['title']
-    description = request.form.get('description')
-    if not title:
-        flash('Task title cannot be empty!', 'danger')
-        return redirect(url_for('index'))
-    task = Task(title=title, description=description, user_id=current_user.id)
-    db.session.add(task)
-    db.session.commit()
-    flash('Task added successfully!', 'success')
+    form = TaskForm()
+    if form.validate_on_submit():
+        task = Task(title=form.title.data, description=form.description.data, user_id=current_user.id)
+        db.session.add(task)
+        db.session.commit()
+        flash('Task added successfully!', 'success')
+    else:
+        flash('Task title is required!', 'danger')
     return redirect(url_for('index'))
 
-@app.route('/edit/<int:task_id>', methods=['GET', 'POST'])
+@app.route('/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
-def edit(task_id):
-    task = Task.query.get_or_404(task_id)
+def edit(id):
+    task = Task.query.get_or_404(id)
     if task.user_id != current_user.id:
         flash("You can't edit this task!", 'danger')
         return redirect(url_for('index'))
-    if request.method == 'POST':
-        task.title = request.form['title']
-        task.description = request.form.get('description')
+    form = TaskForm(obj=task)
+    if form.validate_on_submit():
+        task.title = form.title.data
+        task.description = form.description.data
         db.session.commit()
         flash('Task updated!', 'success')
         return redirect(url_for('index'))
-    return render_template('edit.html', task=task)
+    return render_template('edits.html', form=form)
 
-@app.route('/delete/<int:task_id>')
+@app.route('/delete/<int:id>')
 @login_required
-def delete(task_id):
-    task = Task.query.get_or_404(task_id)
+def delete(id):
+    task = Task.query.get_or_404(id)
     if task.user_id != current_user.id:
         flash("You can't delete this task!", 'danger')
         return redirect(url_for('index'))
@@ -123,10 +142,10 @@ def delete(task_id):
     flash('Task deleted!', 'info')
     return redirect(url_for('index'))
 
-@app.route('/complete/<int:task_id>')
+@app.route('/complete/<int:id>')
 @login_required
-def complete(task_id):
-    task = Task.query.get_or_404(task_id)
+def complete(id):
+    task = Task.query.get_or_404(id)
     if task.user_id != current_user.id:
         flash("You can't modify this task!", 'danger')
         return redirect(url_for('index'))
@@ -138,5 +157,5 @@ def complete(task_id):
 # --- Run the app ---
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # Ensure DB tables exist
+        db.create_all()
     app.run(debug=True, port=5001)
