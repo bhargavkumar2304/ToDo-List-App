@@ -42,9 +42,9 @@ def load_user(user_id):
 # --- Routes ---
 @app.route('/')
 @login_required
-def home():
+def index():
     tasks = Task.query.filter_by(user_id=current_user.id).order_by(Task.date_created.desc()).all()
-    return render_template('home.html', tasks=tasks)
+    return render_template('index.html', tasks=tasks)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -71,7 +71,7 @@ def login():
         if user and check_password_hash(user.password, password):
             login_user(user)
             flash('Logged in successfully!', 'success')
-            return redirect(url_for('home'))
+            return redirect(url_for('index'))
         flash('Invalid credentials!', 'danger')
     return render_template('login.html')
 
@@ -89,51 +89,51 @@ def add_task():
     description = request.form.get('description')
     if not title:
         flash('Task title cannot be empty!', 'danger')
-        return redirect(url_for('home'))
+        return redirect(url_for('index'))
     task = Task(title=title, description=description, user_id=current_user.id)
     db.session.add(task)
     db.session.commit()
     flash('Task added successfully!', 'success')
-    return redirect(url_for('home'))
+    return redirect(url_for('index'))
 
 @app.route('/edit/<int:task_id>', methods=['GET', 'POST'])
 @login_required
-def edit_task(task_id):
+def edit(task_id):
     task = Task.query.get_or_404(task_id)
     if task.user_id != current_user.id:
         flash("You can't edit this task!", 'danger')
-        return redirect(url_for('home'))
+        return redirect(url_for('index'))
     if request.method == 'POST':
         task.title = request.form['title']
         task.description = request.form.get('description')
         db.session.commit()
         flash('Task updated!', 'success')
-        return redirect(url_for('home'))
-    return render_template('edit_task.html', task=task)
+        return redirect(url_for('index'))
+    return render_template('edit.html', task=task)
 
 @app.route('/delete/<int:task_id>')
 @login_required
-def delete_task(task_id):
+def delete(task_id):
     task = Task.query.get_or_404(task_id)
     if task.user_id != current_user.id:
         flash("You can't delete this task!", 'danger')
-        return redirect(url_for('home'))
+        return redirect(url_for('index'))
     db.session.delete(task)
     db.session.commit()
     flash('Task deleted!', 'info')
-    return redirect(url_for('home'))
+    return redirect(url_for('index'))
 
 @app.route('/complete/<int:task_id>')
 @login_required
-def complete_task(task_id):
+def complete(task_id):
     task = Task.query.get_or_404(task_id)
     if task.user_id != current_user.id:
         flash("You can't modify this task!", 'danger')
-        return redirect(url_for('home'))
+        return redirect(url_for('index'))
     task.completed = not task.completed
     db.session.commit()
     flash('Task status updated!', 'success')
-    return redirect(url_for('home'))
+    return redirect(url_for('index'))
 
 # --- Run the app ---
 if __name__ == '__main__':
