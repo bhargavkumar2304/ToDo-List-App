@@ -1,46 +1,23 @@
 {% extends 'base.html' %}
-
 {% block content %}
-<div class="todo-container">
-  <h2>Welcome, {{ current_user.username }}!</h2>
+<h2>Welcome, {{ current_user.username }}!</h2>
 
-  <!-- Task Form -->
-  <form method="POST" action="{{ url_for('index') }}" class="task-form">
-    {{ form.hidden_tag() }}
-    <input type="text" name="title" placeholder="Task title" value="{{ form.title.data }}" required>
+<form method="POST" action="{{ url_for('add') }}">
+  {{ csrf_token() }}
+  <input type="text" name="title" placeholder="Add new task">
+  <button type="submit">Add</button>
+</form>
 
-    <!-- Start and End Date Fields -->
-    <input type="date" name="start_date" value="{{ form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else '' }}" required>
-    <input type="date" name="end_date" value="{{ form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else '' }}" required>
-
-    <!-- Priority Select -->
-    <select name="priority" required>
-      <option value="Low" {% if form.priority.data == 'Low' %}selected{% endif %}>Low</option>
-      <option value="Medium" {% if form.priority.data == 'Medium' %}selected{% endif %}>Medium</option>
-      <option value="High" {% if form.priority.data == 'High' %}selected{% endif %}>High</option>
-    </select>
-    <button type="submit">Add Task</button>
-  </form>
-
-  <!-- Task List -->
-  <ul class="task-list">
-    {% for task in tasks %}
-      {% set overdue = task.end_date and task.end_date < current_date and not task.completed %}
-      <li class="task-item {% if overdue %}overdue{% endif %} {% if task.completed %}completed{% endif %}">
-        <span class="task-title">{{ task.title }}</span>
-        {% if task.start_date %}
-          <span class="task-dates">{{ task.start_date }} → {{ task.end_date }}</span>
-        {% endif %}
-        <span class="priority {{ task.priority|lower }}">{{ task.priority }}</span>
-        <span class="actions">
-          <a href="{{ url_for('complete', id=task.id) }}" class="complete-btn">✓</a>
-          <a href="{{ url_for('edit', id=task.id) }}" class="edit-btn">✎</a>
-          <a href="{{ url_for('delete', id=task.id) }}" class="delete-btn">🗑</a>
-        </span>
-      </li>
-    {% else %}
-      <p class="no-tasks">No tasks yet.</p>
-    {% endfor %}
-  </ul>
-</div>
+<ul>
+  {% for task in tasks %}
+    <li style="text-decoration: {% if task.completed %}line-through{% endif %};">
+      {{ task.title }}
+      <a href="{{ url_for('complete', id=task.id) }}">[✓]</a>
+      <a href="{{ url_for('edit', id=task.id) }}">[Edit]</a>
+      <a href="{{ url_for('delete', id=task.id) }}">[Delete]</a>
+    </li>
+  {% else %}
+    <p>No tasks yet.</p>
+  {% endfor %}
+</ul>
 {% endblock %}
