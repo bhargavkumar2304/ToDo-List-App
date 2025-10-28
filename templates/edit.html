@@ -1,9 +1,25 @@
 {% extends 'base.html' %}
+
 {% block content %}
-<h2>Edit Task</h2>
-<form method="POST">
-  {{ form.hidden_tag() }}
-  {{ form.title.label }} {{ form.title() }}
-  {{ form.submit() }}
-</form>
+<div class="todo-container">
+  <h2>Edit Task</h2>
+
+  <!-- Edit Task Form -->
+  <form method="POST" action="{{ url_for('edit', id=task.id) }}" class="task-form">
+    {{ form.hidden_tag() }}
+    <input type="text" name="title" value="{{ form.title.data }}" required>
+
+    <!-- Start and End Date Fields -->
+    <input type="date" name="start_date" value="{{ form.start_date.data.strftime('%Y-%m-%d') if form.start_date.data else '' }}" required>
+    <input type="date" name="end_date" value="{{ form.end_date.data.strftime('%Y-%m-%d') if form.end_date.data else '' }}" required>
+
+    <!-- Priority Select -->
+    <select name="priority" required>
+      <option value="Low" {% if form.priority.data == 'Low' %}selected{% endif %}>Low</option>
+      <option value="Medium" {% if form.priority.data == 'Medium' %}selected{% endif %}>Medium</option>
+      <option value="High" {% if form.priority.data == 'High' %}selected{% endif %}>High</option>
+    </select>
+    <button type="submit">Update Task</button>
+  </form>
+</div>
 {% endblock %}
